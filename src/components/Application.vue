@@ -68,7 +68,7 @@
         <b-card no-body border-variant="primary">
             <b-tabs card>
                 <b-tab title="Wind">
-                    <vue-chart type="bar" :data="chartDataWind"/>
+                    <vue-chart type="horizontalBar" :options="chartOptionsWind" :data="chartDataWind"/>
                 </b-tab>
                 <b-tab title="Temperature" active>
                     <vue-chart type="bar" :options="chartOptionsTemperature" :data="chartDataTemperature"/>
@@ -90,7 +90,6 @@ import forecastAPI from '../api/forecast'
 import configs from '@/configs'
 import utils from '@/utils'
 
-
 export default {
     name: 'Application',
     data () {
@@ -111,6 +110,51 @@ export default {
             cityForecast: {},
             listForecast: [],
 
+            chartDataWind: {
+                labels: utils.createEmptyArray(configs.diagramsDot * configs.countDotInDay),
+                datasets: []
+            },
+            chartOptionsWind: {
+                responsive: true,
+                title: {
+                    display: true,
+                    position: 'right'
+                },
+
+                tooltips: {
+                    intersect: false,
+                    displayColors: false,
+                    callbacks: {
+                        label(tooltipItem, data) {
+                            let item = data.datasets[tooltipItem.datasetIndex];
+
+                            return `${item.time} - `
+                                    + `${item.dataDeg[tooltipItem.index]}° - `
+                                    + `${item.data[tooltipItem.index]} m/s`;
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Speed (m/s)'
+                        },
+                        ticks: {
+                            min: 0
+                        }
+                    }],
+                    yAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Date'
+                        },
+                    }]
+                }
+            },
             chartDataTemperature: {
                 labels: utils.createEmptyArray(configs.diagramsDot),
                 datasets: []
@@ -141,17 +185,6 @@ export default {
                         }
                     }]
                 }
-            },
-            chartDataWind: {
-                labels: utils.createEmptyArray(configs.diagramsDot),
-                datasets: [
-                    {
-                        data: [10, 20, 30, 40, 50]
-                    }
-                ]
-            },
-            chartOptionsWind: {
-                responsive: true
             },
             chartDataPressure: {
                 labels: utils.createEmptyArray(configs.diagramsDot * configs.countDotInDay),
@@ -289,7 +322,7 @@ export default {
         '$route': 'fetchData'
     },
     methods: {
-        createStack(stackId, data){
+        createStackTemperature(stackId, data){
             return {
                 stack: `Stack ${stackId}`,
                 time: stackId.split(':').splice(0, 2).join(':'),
@@ -301,11 +334,29 @@ export default {
                 hoverBackgroundColor: 'rgba(0, 123, 255, 0.9)'
             }
         },
+        createStackWind(stackId, data, dataDeg){
+            return {
+                stack: `Stack ${stackId}`,
+                time: stackId.split(':').splice(0, 2).join(':'),
+                dataDeg: dataDeg,
+                data: data,
+                borderWidth: 2,
+                borderColor: 'rgba(0, 123, 255, 0.6)',
+                backgroundColor: 'rgba(0, 123, 255, 0.4)',
+                hoverBorderColor: 'rgba(0, 123, 255, 0.6)',
+                hoverBackgroundColor: 'rgba(0, 123, 255, 0.8)'
+            }
+        },
         chartDataset(){
             if (this.listForecast.length) {
                 let dataTempsForStack = {};
+                let dataWindForStack = {};
+                let dataWindDegForStack = {};
+
                 let dataTempsForChart = [];
+                let dataWindForChart = [];
                 let dataLabelsForChart = [];
+
                 let minTemp = 0;
                 let maxTemp = 0;
 
@@ -320,15 +371,22 @@ export default {
 
                     if (!dataTempsForStack[time]) {
                         dataTempsForStack[time] = [];
+                        dataWindForStack[time] = [];
+                        dataWindDegForStack[time] = [];
                     }
 
                     dataTempsForStack[time].push(utils.fixedToDec(item.main.temp, 1));
+                    dataWindForStack[time].push(utils.fixedToDec(item.wind.speed, 1));
+                    dataWindDegForStack[time].push(Math.round(item.wind.deg));
                     minTemp = Math.min(item.main.temp, minTemp);
                     maxTemp = Math.max(item.main.temp, maxTemp);
                 });
 
                 for (let stackId in dataTempsForStack) {
-                    dataTempsForChart.push(this.createStack(stackId, dataTempsForStack[stackId]));
+                    dataTempsForChart.push(this.createStackTemperature(stackId, dataTempsForStack[stackId]));
+                    dataWindForChart.push(
+                            this.createStackWind(stackId, dataWindForStack[stackId], dataWindDegForStack[stackId])
+                    );
                 }
 
                 if (minTemp < 0) {
@@ -341,7 +399,7 @@ export default {
 
                 this.chartOptionsTemperature.scales.yAxes[0].ticks.min = Math.ceil(minTemp);
                 this.chartOptionsTemperature.scales.yAxes[0].ticks.max = Math.ceil(maxTemp);
-                this.chartDataTemperature.labels = dataLabelsForChart.map((dateItem)=> {
+                this.chartDataTemperature.labels = this.chartDataWind.labels = dataLabelsForChart.map((dateItem)=> {
                     return utils.replaceDate(dateItem);
                 });
                 this.chartDataHumidity.labels = this.chartDataPressure.labels = this.listForecast.map((item)=> {
@@ -349,11 +407,15 @@ export default {
                 });
 
                 this.chartDataTemperature.datasets = dataTempsForChart;
+                this.chartDataWind.datasets = dataWindForChart;
                 this.chartDataHumidity.datasets[0].data = this.listForecast.map((item)=> {
                     return item.main.humidity;
                 });
                 this.chartDataPressure.datasets[0].data = this.listForecast.map((item)=> {
                     return utils.fixedToDec(item.main.pressure - configs.normalPressure);
+                });
+                this.chartDataWind.datasets[0].data = this.listForecast.map((item)=> {
+                    return item.wind.speed;
                 });
             }
         },
@@ -388,8 +450,6 @@ export default {
                             this.showContent('success');
                             this.cityForecast = res.data.city;
                             this.listForecast = res.data.list;
-
-                            console.log(res.data);
                         })
                         .catch(err => {
                             this.queryErr = err.response.data;
