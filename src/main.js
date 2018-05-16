@@ -20,7 +20,7 @@ const router = new VueRouter({
   base: __dirname,
   routes: [
     {
-      path: '/(:city)?',
+      path: '/:city?',
       name: 'Application',
       component: Application
     }

@@ -14,9 +14,12 @@
                 <b-navbar-toggle target="nav_collapse"/>
                 <b-collapse is-nav id="nav_collapse">
                     <b-navbar-nav class="ml-auto">
-                        <b-nav-form>
+                        <b-nav-form v-on:submit.prevent="updateCity">
                             <b-input-group right="@">
-                                <b-form-input type="text" placeholder="City or Zipcode"/>
+                                <b-form-input type="text"
+                                              placeholder="City or Zipcode"
+                                              v-model="cityValue"
+                                />
                             </b-input-group>
                         </b-nav-form>
                     </b-navbar-nav>
@@ -27,9 +30,21 @@
 </template>
 
 <script>
-
 export default {
-    name: 'Navbar'
+    name: 'Navbar',
+    data() {
+        return {
+            cityValue: ''
+        };
+    },
+    mounted(){
+        this.cityValue = (this.$route.params.city || '')
+    },
+    methods: {
+        updateCity() {
+            this.$router.replace(`/${this.cityValue}`);
+        }
+    }
 };
 </script>
 
@@ -38,6 +53,7 @@ export default {
     position: relative;
     height: 62px;
 }
+
 .navbar {
     box-shadow: 0 0 3px 2px #fff;
 }
