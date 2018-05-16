@@ -74,10 +74,10 @@
                     <vue-chart type="bar" :options="chartOptionsTemperature" :data="chartDataTemperature"/>
                 </b-tab>
                 <b-tab title="Pressure">
-                    <vue-chart type="bar" :data="chartDataPressure"/>
+                    <vue-chart type="bar" :options="chartOptionsPressure" :data="chartDataPressure"/>
                 </b-tab>
                 <b-tab title="Humidity">
-                    <vue-chart type="bar" :data="chartDataHumidity"/>
+                    <vue-chart type="line" :options="chartOptionsHumidity" :data="chartDataHumidity"/>
                 </b-tab>
             </b-tabs>
         </b-card>
@@ -110,7 +110,6 @@ export default {
             },
             cityForecast: {},
             listForecast: [],
-
 
             chartDataTemperature: {
                 labels: utils.createEmptyArray(configs.diagramsDot),
@@ -151,21 +150,123 @@ export default {
                     }
                 ]
             },
+            chartOptionsWind: {
+                responsive: true
+            },
             chartDataPressure: {
-                labels: utils.createEmptyArray(configs.diagramsDot),
+                labels: utils.createEmptyArray(configs.diagramsDot * configs.countDotInDay),
                 datasets: [
                     {
-                        data: [10, 20, 30, 40, 50]
+                        yAxisID: 'y-axis-1',
+                        data: []
                     }
                 ]
             },
-            chartDataHumidity: {
-                labels: utils.createEmptyArray(configs.diagramsDot),
-                datasets: [
-                    {
-                        data: [10, 20, 30, 40, 50]
+            chartOptionsPressure: {
+                responsive: true,
+                tooltips: {
+                    displayColors: false,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        title(tooltipItems, data){
+                            return `${tooltipItems[0].xLabel}`;
+                        },
+                        label(tooltipItem, data) {
+                            return `${+data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index] + configs.normalPressure} hPa`;
+                        }
                     }
-                ]
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        }
+                    }],
+                    yAxes: [
+                        {
+                            id: 'y-axis-1',
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Delta Pressure (hPa)'
+                            },
+                            ticks: {
+                                beginAtZero: true,
+                                min: -configs.deltaPressure,
+                                max: configs.deltaPressure
+                            },
+                            gridLines: {
+                                zeroLineColor: 'rgba(0, 123, 255, .5)'
+                            }
+                        },
+                        {
+                            id: 'y-axis-2',
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Pressure (hPa)'
+                            },
+                            ticks: {
+                                min: Math.floor(configs.normalPressure - configs.deltaPressure),
+                                max: Math.floor(configs.normalPressure + configs.deltaPressure),
+                                stepSize: 5
+                            }
+                        }
+                    ]
+                }
+            },
+            chartDataHumidity: {
+                labels: utils.createEmptyArray(configs.diagramsDot * configs.countDotInDay),
+                datasets: [{
+                    backgroundColor: 'red',
+                    borderColor: 'red',
+                    fill: false,
+                    data: []
+                }]
+            },
+            chartOptionsHumidity: {
+                responsive: true,
+                tooltips: {
+                    displayColors: false,
+                    callbacks: {
+                        title(tooltipItems, data){
+                            return `${tooltipItems[0].xLabel}`;
+                        },
+                        label(tooltipItem, data) {
+                            return `${data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index]}%`;
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            unit: 'day'
+                        }
+                    }],
+                    yAxes: [{
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Percents (%)'
+                        },
+                        ticks: {
+                            min: 0,
+                            max: 100
+                        }
+                    }]
+                }
             }
         }
     },
@@ -240,10 +341,19 @@ export default {
 
                 this.chartOptionsTemperature.scales.yAxes[0].ticks.min = Math.ceil(minTemp);
                 this.chartOptionsTemperature.scales.yAxes[0].ticks.max = Math.ceil(maxTemp);
-
-                this.chartDataTemperature.datasets = dataTempsForChart;
                 this.chartDataTemperature.labels = dataLabelsForChart.map((dateItem)=> {
                     return utils.replaceDate(dateItem);
+                });
+                this.chartDataHumidity.labels = this.chartDataPressure.labels = this.listForecast.map((item)=> {
+                    return new Date(item.dt * 1e3);
+                });
+
+                this.chartDataTemperature.datasets = dataTempsForChart;
+                this.chartDataHumidity.datasets[0].data = this.listForecast.map((item)=> {
+                    return item.main.humidity;
+                });
+                this.chartDataPressure.datasets[0].data = this.listForecast.map((item)=> {
+                    return utils.fixedToDec(item.main.pressure - configs.normalPressure);
                 });
             }
         },

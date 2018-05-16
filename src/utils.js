@@ -21,6 +21,6 @@ export default {
     replaceDate(date){
         let dateArr = date.split('-');
 
-        return `${dateArr[2]} ${configs.monthShort[+dateArr[1] - 1]}`;
+        return `${dateArr[2]} ${configs.monthsShort[+dateArr[1] - 1]}`;
     }
 };

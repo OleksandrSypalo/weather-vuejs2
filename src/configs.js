@@ -14,8 +14,11 @@ export default {
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
     ],
-    monthShort: [
+    monthsShort: [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ]
+    ],
+    forecastTimeFormat: 'YYYY-MM-DD HH:mm:ss',
+    normalPressure: 1013,
+    deltaPressure: 40,
 };
