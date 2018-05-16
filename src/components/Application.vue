@@ -163,6 +163,7 @@ export default {
                 responsive: true,
                 tooltips: {
                     displayColors: false,
+                    intersect: false,
                     callbacks: {
                         title(tooltipItems, data){
                             return `${tooltipItems[0].xLabel} ${data.datasets[tooltipItems[0].datasetIndex].time}`;
@@ -270,6 +271,7 @@ export default {
                 responsive: true,
                 tooltips: {
                     displayColors: false,
+                    intersect: false,
                     callbacks: {
                         title(tooltipItems, data){
                             return `${tooltipItems[0].xLabel}`;
